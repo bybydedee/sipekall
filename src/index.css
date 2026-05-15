@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #0f4c81; /* Blue from screenshots */
+  --color-secondary: #f0f4f8; /* Light background */
+}
+
+@layer base {
+  body {
+    @apply bg-[#f8f9fc] text-slate-800 antialiased font-sans;
+  }
+}
