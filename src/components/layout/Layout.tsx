@@ -1,4 +1,3 @@
-
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, FilePlus, History, Settings, HelpCircle, LogOut, FileText, Bell } from 'lucide-react';
 
