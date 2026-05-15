@@ -1,7 +1,7 @@
 import { Handler } from '@netlify/functions';
 import { db } from '../../src/db';
 import { tickets } from '../../src/db/schema';
-import { eq, desc, or, and } from 'drizzle-orm';
+import { eq, desc, or } from 'drizzle-orm';
 import { headers, verifyToken } from './utils';
 
 export const handler: Handler = async (event) => {
@@ -48,8 +48,6 @@ export const handler: Handler = async (event) => {
         prioritas: body.prioritas,
         deskripsi: body.deskripsi,
         foto_kerusakan: body.foto_kerusakan || '',
-        nama_alat: body.nama_alat || '',
-        merk: body.merk || '',
         tgl_kejadian: body.tgl_kejadian ? new Date(body.tgl_kejadian) : new Date(),
       }).returning();
       return { statusCode: 201, headers, body: JSON.stringify(newTicket[0]) };
@@ -59,12 +57,18 @@ export const handler: Handler = async (event) => {
       if (!ticketId) return { statusCode: 400, headers, body: 'Missing ticket ID' };
       const body = JSON.parse(event.body || '{}');
       
-      // Clean up body to only include allowed fields for update
       const updateData: any = {};
       if (body.status) updateData.status = body.status;
       if (body.teknisi_id) updateData.teknisi_id = body.teknisi_id;
-      if (body.deskripsi_selesai) updateData.deskripsi_selesai = body.deskripsi_selesai;
+      if (body.catatan_perbaikan) updateData.catatan_perbaikan = body.catatan_perbaikan;
       if (body.foto_selesai) updateData.foto_selesai = body.foto_selesai;
+      
+      if (body.status === 'selesai_teknisi') {
+        updateData.tgl_selesai = new Date();
+        if (body.durasi_kerja) updateData.durasi_kerja = body.durasi_kerja;
+      }
+
+      updateData.updated_at = new Date();
       
       const updatedTicket = await db.update(tickets).set(updateData).where(eq(tickets.id, ticketId)).returning();
       return { statusCode: 200, headers, body: JSON.stringify(updatedTicket[0]) };

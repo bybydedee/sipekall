@@ -1,7 +1,7 @@
 import { Handler } from '@netlify/functions';
 import { db } from '../../src/db';
 import { tickets } from '../../src/db/schema';
-import { sql, eq, and, or } from 'drizzle-orm';
+import { sql, eq, or } from 'drizzle-orm';
 import { headers, verifyToken } from './utils';
 
 export const handler: Handler = async (event) => {
@@ -11,11 +11,6 @@ export const handler: Handler = async (event) => {
   if (!user) return { statusCode: 401, headers, body: JSON.stringify({ error: 'Unauthorized' }) };
 
   try {
-    let query = db.select({ 
-      status: tickets.status,
-      count: sql<number>`count(*)` 
-    }).from(tickets);
-
     // If technician, only count their own tickets or unassigned tickets (menunggu)
     if (user.role === 'teknisi') {
       const stats = await db.select({
@@ -32,9 +27,9 @@ export const handler: Handler = async (event) => {
       };
 
       stats.forEach(s => {
-        if (s.status === 'menunggu') result.menunggu = Number(s.count);
-        if (s.status === 'diproses' || s.status === 'sedang_dikerjakan') result.diproses += Number(s.count);
-        if (s.status === 'selesai' || s.status === 'selesai_teknisi') result.selesai += Number(s.count);
+        if (s.status === 'menunggu') result.menunggu += Number(s.count);
+        if (s.status === 'ditugaskan' || s.status === 'diproses') result.diproses += Number(s.count);
+        if (s.status === 'selesai_teknisi' || s.status === 'tertutup') result.selesai += Number(s.count);
       });
 
       return { statusCode: 200, headers, body: JSON.stringify(result) };
@@ -47,17 +42,17 @@ export const handler: Handler = async (event) => {
     }).from(tickets)
     .groupBy(tickets.status);
 
-    const result = {
-      menunggu: 0,
-      diproses: 0,
-      selesai: 0
-    };
+      const result = {
+        menunggu: 0,
+        diproses: 0,
+        selesai: 0
+      };
 
-    stats.forEach(s => {
-      if (s.status === 'menunggu') result.menunggu = Number(s.count);
-      if (s.status === 'diproses' || s.status === 'sedang_dikerjakan') result.diproses += Number(s.count);
-      if (s.status === 'selesai' || s.status === 'selesai_teknisi') result.selesai += Number(s.count);
-    });
+      stats.forEach(s => {
+        if (s.status === 'menunggu') result.menunggu += Number(s.count);
+        if (s.status === 'ditugaskan' || s.status === 'diproses') result.diproses += Number(s.count);
+        if (s.status === 'selesai_teknisi' || s.status === 'tertutup') result.selesai += Number(s.count);
+      });
 
     return { statusCode: 200, headers, body: JSON.stringify(result) };
   } catch (error: any) {
