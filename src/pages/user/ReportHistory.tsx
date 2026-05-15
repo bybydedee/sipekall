@@ -4,36 +4,57 @@ import { useState, useEffect } from 'react';
 export default function ReportHistory() {
   const [tickets, setTickets] = useState<any[]>([]);
   const [stats, setStats] = useState({ total: 0, diproses: 0, selesai: 0 });
-  const [loading, setLoading] = useState(true);
+
+  const fetchData = async () => {
+    try {
+      const token = localStorage.getItem('sipekall_token');
+      const [statsRes, ticketsRes] = await Promise.all([
+        fetch('/api/dashboard', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/tickets', { headers: { Authorization: `Bearer ${token}` } })
+      ]);
+      
+      const statsData = await statsRes.json();
+      const ticketsData = await ticketsRes.json();
+      
+      if (statsRes.ok) {
+        setStats({
+          total: statsData.menunggu + statsData.diproses + statsData.selesai,
+          diproses: statsData.diproses,
+          selesai: statsData.selesai
+        });
+      }
+      if (ticketsRes.ok) setTickets(ticketsData);
+    } catch (error) {
+      console.error('Fetch error:', error);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const token = localStorage.getItem('sipekall_token');
-        const [statsRes, ticketsRes] = await Promise.all([
-          fetch('/api/dashboard', { headers: { Authorization: `Bearer ${token}` } }),
-          fetch('/api/tickets', { headers: { Authorization: `Bearer ${token}` } })
-        ]);
-        
-        const statsData = await statsRes.json();
-        const ticketsData = await ticketsRes.json();
-        
-        if (statsRes.ok) {
-          setStats({
-            total: statsData.menunggu + statsData.diproses + statsData.selesai,
-            diproses: statsData.diproses,
-            selesai: statsData.selesai
-          });
-        }
-        if (ticketsRes.ok) setTickets(ticketsData);
-      } catch (error) {
-        console.error('Fetch error:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
   }, []);
+
+  const handleCloseTicket = async (taskId: number) => {
+    if (!confirm('Tutup tiket ini? Pastikan perbaikan sudah sesuai.')) return;
+    try {
+      const token = localStorage.getItem('sipekall_token');
+      const res = await fetch(`/api/tickets/${taskId}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: 'tertutup' })
+      });
+      if (res.ok) {
+        alert('Tiket berhasil ditutup.');
+        fetchData();
+      } else {
+        alert('Gagal menutup tiket.');
+      }
+    } catch (error) {
+      console.error('Close ticket error:', error);
+    }
+  };
 
   return (
     <div className="space-y-6 pb-10">
@@ -119,22 +140,22 @@ export default function ReportHistory() {
                         </span>
                       </td>
                       <td className="px-5 py-4 text-right">
-                        <button className="text-primary hover:text-blue-800 font-bold text-xs uppercase tracking-wider">Detail</button>
+                        {t.status === 'selesai_teknisi' ? (
+                          <button 
+                            onClick={() => handleCloseTicket(t.id)}
+                            className="bg-green-600 text-white font-bold text-xs px-4 py-1.5 rounded hover:bg-green-700 transition-colors shadow-sm"
+                          >
+                            CLOSE TICKET
+                          </button>
+                        ) : (
+                          <button className="text-primary hover:text-blue-800 font-bold text-xs uppercase tracking-wider">Detail</button>
+                        )}
                       </td>
                     </tr>
                   ))
                 )}
               </tbody>
             </table>
-          </div>
-          <div className="p-4 border-t border-slate-200 flex justify-between items-center bg-slate-50">
-            <div className="flex items-center gap-3 text-sm text-slate-600">
-              Halaman 
-              <span className="w-8 h-8 flex items-center justify-center bg-primary text-white rounded font-bold">1</span>
-              <span className="w-8 h-8 flex items-center justify-center hover:bg-slate-200 rounded cursor-pointer">2</span>
-              <span className="w-8 h-8 flex items-center justify-center hover:bg-slate-200 rounded cursor-pointer">3</span>
-            </div>
-            <button className="px-4 py-2 border border-slate-300 rounded text-slate-600 bg-white hover:bg-slate-50 font-bold text-sm uppercase">Muat Lagi</button>
           </div>
         </div>
       </div>
@@ -147,7 +168,6 @@ export default function ReportHistory() {
         <button className="mt-6 md:mt-0 relative z-10 bg-[#a5c2f5] hover:bg-[#8eb3f3] text-primary font-bold py-3 px-8 rounded-lg shadow-md transition-colors whitespace-nowrap">
           HUBUNGI TEKNISI
         </button>
-        <div className="absolute right-0 top-0 w-64 h-full bg-blue-600/30 -skew-x-12 translate-x-10"></div>
       </div>
     </div>
   );
