@@ -3,10 +3,6 @@
   publish = "dist"
   functions = "netlify/functions"
 
-[functions]
-  node_bundler = "esbuild"
-  external_node_modules = ["postgres"]
-
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
@@ -16,3 +12,7 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+[functions]
+  node_bundle = true
+  external_node_modules = ["postgres"]
