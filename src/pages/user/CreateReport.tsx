@@ -1,7 +1,10 @@
-import { useState } from 'react';
-import { ImagePlus } from 'lucide-react';
+import React, { useState } from 'react';
+import { ImagePlus, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export default function CreateReport() {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     judul: '',
     kategori: '',
@@ -15,11 +18,39 @@ export default function CreateReport() {
     no_hp: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate API call
-    console.log('Submitting', formData);
-    alert('Laporan berhasil dikirim!');
+    setLoading(true);
+    
+    try {
+      const token = localStorage.getItem('sipekall_token');
+      const res = await fetch('/api/tickets', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(formData)
+      });
+      
+      if (res.ok) {
+        alert('Laporan berhasil dikirim!');
+        navigate('/user/riwayat');
+      } else {
+        const err = await res.json();
+        alert('Gagal mengirim laporan: ' + (err.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Submit error:', error);
+      alert('Terjadi kesalahan koneksi.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   return (
@@ -36,6 +67,9 @@ export default function CreateReport() {
             <label className="block text-sm font-semibold text-slate-700 mb-2">Judul Kerusakan <span className="text-red-500">*</span></label>
             <input 
               required
+              name="judul"
+              value={formData.judul}
+              onChange={handleChange}
               className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
               placeholder="Contoh: AC Ruang Rawat Inap Bocor"
             />
@@ -44,19 +78,30 @@ export default function CreateReport() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">Kategori <span className="text-red-500">*</span></label>
-              <select className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none">
+              <select 
+                required
+                name="kategori"
+                value={formData.kategori}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none"
+              >
                 <option value="">Pilih kategori...</option>
                 <option value="AC">Pendingin Ruangan / AC</option>
                 <option value="Listrik">Kelistrikan</option>
                 <option value="Plumbing">Plumbing / Air</option>
+                <option value="Alat Medis">Alat Medis</option>
+                <option value="Fasilitas Umum">Fasilitas Umum</option>
               </select>
             </div>
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">Lokasi <span className="text-red-500">*</span></label>
               <input 
                 required
+                name="lokasi"
+                value={formData.lokasi}
+                onChange={handleChange}
                 className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                placeholder="Contoh: Rawat Inap Lt. 3 - Kamar..."
+                placeholder="Contoh: Rawat Inap Lt. 3 - Kamar 301"
               />
             </div>
           </div>
@@ -70,7 +115,6 @@ export default function CreateReport() {
                   onClick={() => setFormData({...formData, prioritas: p})}
                   className={`border rounded-lg p-4 text-center cursor-pointer transition-all ${formData.prioritas === p ? 'border-primary bg-blue-50 text-primary font-bold ring-1 ring-primary' : 'border-slate-200 text-slate-600 hover:border-primary/50'}`}
                 >
-                  <div className="text-xs mb-1">()</div>
                   <div className="text-sm">{p}</div>
                 </div>
               ))}
@@ -81,6 +125,9 @@ export default function CreateReport() {
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">Nama Alat/Equipment</label>
               <input 
+                name="nama_alat"
+                value={formData.nama_alat}
+                onChange={handleChange}
                 className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
                 placeholder="Contoh: AC Split 1.5 PK"
               />
@@ -88,6 +135,9 @@ export default function CreateReport() {
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">Merk/Type</label>
               <input 
+                name="merk"
+                value={formData.merk}
+                onChange={handleChange}
                 className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
                 placeholder="Contoh: Panasonic CS-YN12"
               />
@@ -100,6 +150,9 @@ export default function CreateReport() {
               <input 
                 type="date"
                 required
+                name="tgl_kejadian"
+                value={formData.tgl_kejadian}
+                onChange={handleChange}
                 className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
@@ -108,6 +161,9 @@ export default function CreateReport() {
               <input 
                 type="time"
                 required
+                name="waktu_kejadian"
+                value={formData.waktu_kejadian}
+                onChange={handleChange}
                 className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
@@ -118,6 +174,9 @@ export default function CreateReport() {
             <textarea 
               rows={4}
               required
+              name="deskripsi"
+              value={formData.deskripsi}
+              onChange={handleChange}
               className="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
               placeholder="Jelaskan detail kerusakan yang terjadi..."
             ></textarea>
@@ -126,26 +185,28 @@ export default function CreateReport() {
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-2">No. HP yang bisa dihubungi</label>
             <input 
+              name="no_hp"
+              value={formData.no_hp}
+              onChange={handleChange}
               className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
               placeholder="Contoh: 0812-3456-7890"
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Foto Kerusakan</label>
-            <div className="border-2 border-dashed border-slate-300 rounded-xl p-10 flex flex-col items-center justify-center text-slate-500 hover:bg-slate-50 transition-colors cursor-pointer bg-slate-50/50">
-              <ImagePlus size={40} className="mb-3 text-slate-400" />
-              <p className="font-medium text-slate-700 text-sm">Klik untuk upload foto atau drag & drop</p>
-              <p className="text-xs text-slate-400 mt-1">PNG, JPG up to 5MB</p>
-            </div>
-          </div>
-
           <div className="pt-4 flex gap-4">
-            <button type="button" className="w-1/3 py-3 border border-slate-300 text-slate-700 font-bold rounded-lg hover:bg-slate-50 transition-colors">
+            <button 
+              type="button" 
+              onClick={() => navigate(-1)}
+              className="w-1/3 py-3 border border-slate-300 text-slate-700 font-bold rounded-lg hover:bg-slate-50 transition-colors"
+            >
               Batal
             </button>
-            <button type="submit" className="w-2/3 py-3 bg-primary text-white font-bold rounded-lg hover:bg-blue-800 transition-colors shadow-md flex items-center justify-center gap-2">
-               Kirim Laporan
+            <button 
+              type="submit" 
+              disabled={loading}
+              className="w-2/3 py-3 bg-primary text-white font-bold rounded-lg hover:bg-blue-800 transition-colors shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+               {loading ? <Loader2 className="animate-spin" /> : 'Kirim Laporan'}
             </button>
           </div>
 

@@ -1,17 +1,45 @@
 import { Search, Filter, Download } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 export default function ReportHistory() {
-  const tickets = [
-    { id: 'TK101', tgl: '12 Mei 26', judul: 'Roda Ranjang Pasien #04 Macet', status: 'MENUNGGU', teknisi: '-' },
-    { id: 'TK099', tgl: '11 Mei 26', judul: 'Keran Wastafel Ruang Tindakan Bocor', status: 'DIPROSES', teknisi: 'Anton' },
-    { id: 'TK080', tgl: '05 Mei 26', judul: 'Lampu Toilet Pasien Mati', status: 'SELESAI', teknisi: 'Budi' },
-  ];
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [stats, setStats] = useState({ total: 0, diproses: 0, selesai: 0 });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem('sipekall_token');
+        const [statsRes, ticketsRes] = await Promise.all([
+          fetch('/api/dashboard', { headers: { Authorization: `Bearer ${token}` } }),
+          fetch('/api/tickets', { headers: { Authorization: `Bearer ${token}` } })
+        ]);
+        
+        const statsData = await statsRes.json();
+        const ticketsData = await ticketsRes.json();
+        
+        if (statsRes.ok) {
+          setStats({
+            total: statsData.menunggu + statsData.diproses + statsData.selesai,
+            diproses: statsData.diproses,
+            selesai: statsData.selesai
+          });
+        }
+        if (ticketsRes.ok) setTickets(ticketsData);
+      } catch (error) {
+        console.error('Fetch error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   return (
     <div className="space-y-6 pb-10">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">RIWAYAT LAPORAN UNIT IGD</h1>
+          <h1 className="text-2xl font-bold text-slate-800 uppercase">Riwayat Pelaporan</h1>
         </div>
       </div>
 
@@ -43,15 +71,15 @@ export default function ReportHistory() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="border border-slate-200 rounded-xl p-5 flex flex-col justify-center">
             <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">TOTAL LAPORAN</p>
-            <h3 className="text-3xl font-bold text-primary">182</h3>
+            <h3 className="text-3xl font-bold text-primary">{stats.total}</h3>
           </div>
           <div className="border border-slate-200 rounded-xl p-5 flex flex-col justify-center">
             <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">DALAM PROSES</p>
-            <h3 className="text-3xl font-bold text-orange-600">12</h3>
+            <h3 className="text-3xl font-bold text-orange-600">{stats.diproses}</h3>
           </div>
           <div className="border border-slate-200 rounded-xl p-5 flex flex-col justify-center">
             <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">TERSELESAIKAN</p>
-            <h3 className="text-3xl font-bold text-primary">170</h3>
+            <h3 className="text-3xl font-bold text-primary">{stats.selesai}</h3>
           </div>
         </div>
 
@@ -65,31 +93,37 @@ export default function ReportHistory() {
                   <th className="px-5 py-4">TANGGAL</th>
                   <th className="px-5 py-4">JUDUL LAPORAN</th>
                   <th className="px-5 py-4">STATUS</th>
-                  <th className="px-5 py-4">TEKNISI</th>
                   <th className="px-5 py-4 text-right">AKSI</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
-                {tickets.map(t => (
-                  <tr key={t.id} className="hover:bg-slate-50">
-                    <td className="px-5 py-4 font-bold text-primary">{t.id}</td>
-                    <td className="px-5 py-4 text-slate-600">{t.tgl}</td>
-                    <td className="px-5 py-4 text-slate-800 font-medium">{t.judul}</td>
-                    <td className="px-5 py-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        t.status === 'MENUNGGU' ? 'bg-red-50 text-red-600' :
-                        t.status === 'DIPROSES' ? 'bg-slate-100 text-slate-600' :
-                        'bg-blue-50 text-primary'
-                      }`}>
-                        {t.status}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 text-slate-600">{t.teknisi}</td>
-                    <td className="px-5 py-4 text-right">
-                      <button className="text-primary hover:text-blue-800 font-bold text-xs uppercase tracking-wider">Detail</button>
+                {tickets.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-5 py-10 text-center text-slate-500 font-medium">
+                      Belum ada riwayat laporan.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  tickets.map(t => (
+                    <tr key={t.id} className="hover:bg-slate-50">
+                      <td className="px-5 py-4 font-bold text-primary">{t.ticket_number}</td>
+                      <td className="px-5 py-4 text-slate-600">{new Date(t.created_at).toLocaleDateString()}</td>
+                      <td className="px-5 py-4 text-slate-800 font-medium">{t.judul}</td>
+                      <td className="px-5 py-4">
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                          t.status === 'menunggu' ? 'bg-red-50 text-red-600' :
+                          t.status === 'diproses' ? 'bg-slate-100 text-slate-600' :
+                          'bg-blue-50 text-primary'
+                        }`}>
+                          {t.status}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <button className="text-primary hover:text-blue-800 font-bold text-xs uppercase tracking-wider">Detail</button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

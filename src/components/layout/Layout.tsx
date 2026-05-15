@@ -1,3 +1,4 @@
+
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, FilePlus, History, Settings, HelpCircle, LogOut, FileText, Bell } from 'lucide-react';
 
@@ -13,20 +14,17 @@ export default function Layout() {
 
   const menuItems = {
     user: [
-      { path: '/user/dashboard', icon: LayoutDashboard, label: 'Dash' },
+      { path: '/user/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
       { path: '/user/lapor', icon: FilePlus, label: 'Lapor' },
       { path: '/user/riwayat', icon: History, label: 'Riwayat' },
     ],
     admin: [
       { path: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
       { path: '/admin/tickets', icon: FileText, label: 'Tiket' },
-      { path: '#', icon: History, label: 'Tugas' },
-      { path: '#', icon: FileText, label: 'Laporan' },
     ],
     teknisi: [
       { path: '/teknisi/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-      { path: '#', icon: History, label: 'Equipment' },
-      { path: '#', icon: FileText, label: 'Maintenance' },
+      { path: '#', icon: History, label: 'Daftar Tugas' },
     ]
   };
 
@@ -42,7 +40,7 @@ export default function Layout() {
               <span className="bg-primary text-white p-1.5 rounded text-sm shrink-0">SIP</span>
               SIPEKAL
             </h1>
-            <p className="text-xs text-slate-500 mt-1 uppercase tracking-wider font-semibold">Unit: {user.nama_lengkap || 'Unknown'}</p>
+            <p className="text-xs text-slate-500 mt-1 uppercase tracking-wider font-semibold">Aktif: {user.nama_lengkap || 'Unknown'}</p>
           </div>
 
           <nav className="px-4 space-y-1.5">

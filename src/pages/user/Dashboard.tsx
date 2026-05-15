@@ -1,14 +1,36 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Clock, Settings, CheckCircle, RefreshCw, Eye, Phone } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function UserDashboard() {
-  const [stats] = useState({ menunggu: 2, diproses: 1, selesai: 3 });
-  const [tickets] = useState([
-    { id: 'TK101', judul: 'Kipas Angin Bed 2', status: 'MENUNGGU' },
-    { id: 'TK099', judul: 'Keran Wastafel Bocor', status: 'DIPROSES' },
-    { id: 'TK088', judul: 'AC Central Mati', status: 'SELESAI' },
-  ]);
+  const [stats, setStats] = useState({ menunggu: 0, diproses: 0, selesai: 0 });
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('sipekall_token');
+      const [statsRes, ticketsRes] = await Promise.all([
+        fetch('/api/dashboard', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/tickets', { headers: { Authorization: `Bearer ${token}` } })
+      ]);
+      
+      const statsData = await statsRes.json();
+      const ticketsData = await ticketsRes.json();
+      
+      if (statsRes.ok) setStats(statsData);
+      if (ticketsRes.ok) setTickets(ticketsData.slice(0, 5)); // Show latest 5
+    } catch (error) {
+      console.error('Fetch error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -58,7 +80,9 @@ export default function UserDashboard() {
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="p-5 border-b border-slate-200 flex justify-between items-center">
               <h2 className="text-lg font-bold text-slate-800">LAPORAN AKTIF (TERBARU)</h2>
-              <button className="text-slate-500 hover:text-primary transition-colors"><RefreshCw size={20} /></button>
+              <button onClick={fetchData} className={`text-slate-500 hover:text-primary transition-colors ${loading ? 'animate-spin' : ''}`}>
+                <RefreshCw size={20} />
+              </button>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
@@ -71,26 +95,34 @@ export default function UserDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-sm">
-                  {tickets.map(t => (
-                    <tr key={t.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-5 py-4 font-bold text-primary">{t.id}</td>
-                      <td className="px-5 py-4 text-slate-700 font-medium">{t.judul}</td>
-                      <td className="px-5 py-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                          t.status === 'MENUNGGU' ? 'bg-orange-100 text-orange-700' :
-                          t.status === 'DIPROSES' ? 'bg-blue-100 text-blue-700' :
-                          'bg-slate-100 text-slate-600'
-                        }`}>
-                          {t.status}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 text-right">
-                        <button className="text-primary hover:text-blue-800 font-semibold flex items-center gap-1 ml-auto">
-                          <Eye size={16} /> Detail
-                        </button>
+                  {tickets.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-5 py-10 text-center text-slate-500 font-medium">
+                        Belum ada laporan kerusakan.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    tickets.map(t => (
+                      <tr key={t.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-5 py-4 font-bold text-primary">{t.ticket_number}</td>
+                        <td className="px-5 py-4 text-slate-700 font-medium">{t.judul}</td>
+                        <td className="px-5 py-4">
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                            t.status === 'menunggu' ? 'bg-orange-100 text-orange-700' :
+                            t.status === 'diproses' ? 'bg-blue-100 text-blue-700' :
+                            'bg-slate-100 text-slate-600'
+                          }`}>
+                            {t.status}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-right">
+                          <button className="text-primary hover:text-blue-800 font-semibold flex items-center gap-1 ml-auto">
+                            <Eye size={16} /> Detail
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -117,14 +149,16 @@ export default function UserDashboard() {
           <div className="bg-[#eef2f6] rounded-xl p-6 border border-slate-200">
             <h3 className="text-lg font-bold text-slate-800 mb-4">Unit Aktivitas</h3>
             <div className="space-y-5">
-              <div className="relative pl-6 before:absolute before:left-1 before:top-2 before:w-2 before:h-2 before:bg-primary before:rounded-full before:ring-4 before:ring-[#eef2f6]">
-                <p className="text-sm text-slate-700 font-medium">Pengecekan Kipas Angin oleh teknisi Roni.</p>
-                <p className="text-xs text-slate-500 mt-1">10 menit yang lalu</p>
-              </div>
-              <div className="relative pl-6 before:absolute before:left-1 before:top-2 before:w-2 before:h-2 before:bg-orange-500 before:rounded-full before:ring-4 before:ring-[#eef2f6] before:content-[''] after:absolute after:left-1.5 after:top-6 after:w-px after:-bottom-4 after:bg-slate-300">
-                <p className="text-sm text-slate-700 font-medium">Laporan baru: Keran Wastafel Bocor.</p>
-                <p className="text-xs text-slate-500 mt-1">45 menit yang lalu</p>
-              </div>
+              {tickets.length === 0 ? (
+                <p className="text-sm text-slate-500 italic">Belum ada aktivitas terbaru.</p>
+              ) : (
+                tickets.slice(0, 3).map((t: any) => (
+                  <div key={t.id} className="relative pl-6 before:absolute before:left-1 before:top-2 before:w-2 before:h-2 before:bg-primary before:rounded-full before:ring-4 before:ring-[#eef2f6]">
+                    <p className="text-sm text-slate-700 font-medium">Laporan baru: {t.judul}</p>
+                    <p className="text-xs text-slate-500 mt-1">{new Date(t.created_at).toLocaleString()}</p>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

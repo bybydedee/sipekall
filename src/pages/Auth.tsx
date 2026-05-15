@@ -92,7 +92,7 @@ export default function AuthPage() {
 
         <form onSubmit={handleLogin} className="space-y-5">
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Email Address</label>
+            <label className="block text-sm font-bold text-slate-500 uppercase mb-2 ml-1">Email Address</label>
             <input 
               type="email" 
               required
@@ -103,7 +103,7 @@ export default function AuthPage() {
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Password</label>
+            <label className="block text-sm font-bold text-slate-500 uppercase mb-2 ml-1">Password</label>
             <input 
               type="password" 
               required
